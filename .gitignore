@@ -1,0 +1,34 @@
+# Arquivos compilados Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Pasta de saída de compilação
+bin/
+out/
+build/
+
+# Configurações locais do VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/*.code-workspace
+
+# Mantém a pasta .vscode no repositório, mas ignora configs pessoais
+!.vscode/extensions.json
+
+# Logs
+*.log
+
+# Sistema operacional Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Arquivos temporários
+*.tmp
+*.bak
+*.swp
+
+# Contatos exportados (gerados pelo programa)
+contatos.txt
