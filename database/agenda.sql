@@ -26,8 +26,7 @@ CREATE TABLE contatos (
 --  Dados de exemplo (opcional — apague se não quiser)
 -- ============================================================
 INSERT INTO contatos (nome, telefone, email) VALUES
-    ('Ana Lima',      '(62) 99001-1111', 'ana.lima@email.com'),
-    ('Bruno Souza',   '(11) 98002-2222', 'bruno.souza@email.com'),
-    ('Carla Mendes',  '(31) 97003-3333', NULL),
-    ('Diego Ferreira','(21) 96004-4444', 'diego.f@email.com'),
-    ('Elisa Castro',  '(62) 95005-5555', 'elisa.castro@email.com');
+    ('Marcio',  '(62) 99001-1111', 'marcio@email.com'),
+    ('Lara',    '(62) 98002-2222', 'lara@email.com'),
+    ('Teteu',   '(62) 97003-3333', NULL),
+    ('Benito',  '(62) 96004-4444', NULL);
