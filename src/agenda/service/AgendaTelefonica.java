@@ -242,15 +242,20 @@ public class AgendaTelefonica {
         }
     }
 
-    // lê um campo obrigatório e avisa se estiver vazio
+    // lê um campo obrigatório — pede de novo se vazio, ou cancela se digitar "0"
     private String lerCampoObrigatorio(String prompt) {
-        Cores.print(Cores.BRANCO, prompt);
-        String valor = scanner.nextLine().trim();
-        if (valor.isBlank()) {
-            Cores.atencao("Este campo é obrigatório. Operação cancelada.");
-            return null;
+        while (true) {
+            Cores.print(Cores.BRANCO, prompt);
+            Cores.println(Cores.AMARELO, " (digite 0 para cancelar e voltar ao menu)");
+            Cores.print(Cores.BRANCO, "> ");
+            String valor = scanner.nextLine().trim();
+            if (valor.equals("0")) {
+                Cores.atencao("Operação cancelada.");
+                return null;
+            }
+            if (!valor.isBlank()) return valor;
+            Cores.atencao("Este campo é obrigatório. Tente novamente.");
         }
-        return valor;
     }
 
     // lê e valida o telefone, só aceita números e símbolos permitidos
