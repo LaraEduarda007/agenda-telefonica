@@ -82,7 +82,12 @@ public class AgendaTelefonica {
 
         System.out.print("E-mail (opcional, pressione Enter para pular): ");
         String email = scanner.nextLine().trim();
-        if (email.isBlank()) email = null;
+        if (email.isBlank()) {
+            email = null;
+        } else if (!emailValido(email)) {
+            Cores.atencao("E-mail inválido. O contato será salvo sem e-mail.");
+            email = null;
+        }
 
         try {
             dao.salvar(new Contato(nome, telefone, email));
@@ -174,7 +179,13 @@ public class AgendaTelefonica {
             String emailAtual = contato.getEmail() != null ? contato.getEmail() : "(sem e-mail)";
             System.out.print("Novo e-mail [" + emailAtual + "]: ");
             String email = scanner.nextLine().trim();
-            if (!email.isBlank()) contato.setEmail(email);
+            if (!email.isBlank()) {
+                if (emailValido(email)) {
+                    contato.setEmail(email);
+                } else {
+                    Cores.atencao("E-mail inválido. Mantendo o anterior.");
+                }
+            }
 
             dao.atualizar(contato);
             Cores.sucesso("Contato atualizado com sucesso!");
@@ -268,6 +279,14 @@ public class AgendaTelefonica {
             Cores.atencao("ID inválido. Digite apenas números.");
             return null;
         }
+    }
+
+    // valida formato básico de e-mail: deve conter @ e pelo menos um ponto após ele
+    private boolean emailValido(String email) {
+        int arroba = email.indexOf('@');
+        if (arroba <= 0) return false;
+        int ponto = email.indexOf('.', arroba);
+        return ponto > arroba + 1 && ponto < email.length() - 1;
     }
 
     // imprime o cabeçalho da tabela de contatos
