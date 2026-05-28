@@ -80,14 +80,7 @@ public class AgendaTelefonica {
         String telefone = lerTelefone();
         if (telefone == null) return;
 
-        System.out.print("E-mail (opcional, pressione Enter para pular): ");
-        String email = scanner.nextLine().trim();
-        if (email.isBlank()) {
-            email = null;
-        } else if (!emailValido(email)) {
-            Cores.atencao("E-mail inválido. O contato será salvo sem e-mail.");
-            email = null;
-        }
+        String email = lerEmail();
 
         try {
             dao.salvar(new Contato(nome, telefone, email));
@@ -272,6 +265,17 @@ public class AgendaTelefonica {
                 return tel;
             }
             Cores.atencao("Telefone inválido. Use apenas números, parênteses, hífen ou espaço (mínimo 8 dígitos).");
+        }
+    }
+
+    // lê e valida o e-mail — opcional, mas se informado deve ter formato válido
+    private String lerEmail() {
+        while (true) {
+            Cores.print(Cores.BRANCO, "E-mail (opcional, pressione Enter para pular): ");
+            String email = scanner.nextLine().trim();
+            if (email.isBlank()) return null;
+            if (emailValido(email)) return email;
+            Cores.atencao("E-mail inválido. Digite um e-mail com @ e domínio (ex: nome@email.com) ou pressione Enter para pular.");
         }
     }
 
