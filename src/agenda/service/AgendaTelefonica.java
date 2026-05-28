@@ -258,7 +258,7 @@ public class AgendaTelefonica {
         }
     }
 
-    // lê e valida o telefone, só aceita números e símbolos permitidos
+    // lê e valida o telefone — só aceita dígitos, parênteses, hífen, espaço e +, mínimo 8 dígitos
     private String lerTelefone() {
         while (true) {
             Cores.print(Cores.BRANCO, "Telefone (ex: (62) 99000-0000): ");
@@ -267,10 +267,11 @@ public class AgendaTelefonica {
                 Cores.atencao("Telefone é obrigatório. Operação cancelada.");
                 return null;
             }
-            if (tel.matches("[0-9()\\-\\s+]+")) {
+            String apenasDigitos = tel.replaceAll("[^0-9]", "");
+            if (tel.matches("[0-9()\\-\\s+]+") && apenasDigitos.length() >= 8) {
                 return tel;
             }
-            Cores.atencao("Telefone inválido. Use apenas números, parênteses, hífen ou espaço.");
+            Cores.atencao("Telefone inválido. Use apenas números, parênteses, hífen ou espaço (mínimo 8 dígitos).");
         }
     }
 
