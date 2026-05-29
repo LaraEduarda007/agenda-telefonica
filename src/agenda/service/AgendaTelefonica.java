@@ -147,39 +147,96 @@ public class AgendaTelefonica {
             if (contato == null) return;
 
             Cores.println(Cores.LILAS, "Contato atual: " + contato);
-            System.out.println("  (Pressione Enter para manter o valor atual)");
+            Cores.println(Cores.AMARELO, "  (Pressione Enter para manter o valor atual | Digite 0 para cancelar a edição)");
             System.out.println();
 
-            System.out.print("Novo nome [" + contato.getNome() + "]: ");
-            String nome = scanner.nextLine().trim();
-            if (!nome.isBlank()) contato.setNome(nome);
+            // --- NOME ---
+            String nome = editarNome(contato);
+            if (nome == null) return; // cancelou
+            contato.setNome(nome);
 
-            System.out.print("Novo telefone [" + contato.getTelefone() + "]: ");
-            String tel = scanner.nextLine().trim();
-            if (!tel.isBlank()) {
-                if (!tel.matches("[0-9()\\-\\s+]+")) {
-                    Cores.atencao("Telefone contém caracteres inválidos. Mantendo o anterior.");
-                } else {
-                    contato.setTelefone(tel);
-                }
-            }
+            // --- TELEFONE ---
+            String tel = editarTelefone(contato);
+            if (tel == null) return; // cancelou
+            contato.setTelefone(tel);
 
-            String emailAtual = contato.getEmail() != null ? contato.getEmail() : "(sem e-mail)";
-            System.out.print("Novo e-mail [" + emailAtual + "]: ");
-            String email = scanner.nextLine().trim();
-            if (!email.isBlank()) {
-                if (emailValido(email)) {
-                    contato.setEmail(email);
-                } else {
-                    Cores.atencao("E-mail inválido. Mantendo o anterior.");
-                }
-            }
+            // --- E-MAIL ---
+            String email = editarEmail(contato);
+            if (email == null && emailEditadoComCancelamento) return; // cancelou
+            contato.setEmail(email);
 
             dao.atualizar(contato);
             Cores.sucesso("Contato atualizado com sucesso!");
 
         } catch (SQLException e) {
             Cores.erro("Erro ao editar: " + e.getMessage());
+        }
+    }
+
+    // flag usada para distinguir "email deixado em branco" de "cancelamento"
+    private boolean emailEditadoComCancelamento = false;
+
+    private String editarNome(Contato contato) throws SQLException {
+        while (true) {
+            Cores.print(Cores.BRANCO, "Novo nome [" + contato.getNome() + "]: ");
+            String entrada = scanner.nextLine().trim();
+
+            if (entrada.equals("0")) {
+                Cores.atencao("Edição cancelada.");
+                return null;
+            }
+            if (entrada.isBlank()) {
+                // Enter sem digitar = manter o atual
+                return contato.getNome();
+            }
+            if (dao.nomeJaExiste(entrada, contato.getId())) {
+                Cores.atencao("Já existe um contato com o nome \"" + entrada + "\". Digite outro nome.");
+                continue;
+            }
+            return entrada;
+        }
+    }
+
+    private String editarTelefone(Contato contato) {
+        while (true) {
+            Cores.print(Cores.BRANCO, "Novo telefone [" + contato.getTelefone() + "]: ");
+            String entrada = scanner.nextLine().trim();
+
+            if (entrada.equals("0")) {
+                Cores.atencao("Edição cancelada.");
+                return null;
+            }
+            if (entrada.isBlank()) {
+                return contato.getTelefone();
+            }
+            String apenasDigitos = entrada.replaceAll("[^0-9]", "");
+            if (entrada.matches("[0-9()\\-\\s+]+") && apenasDigitos.length() >= 8) {
+                return entrada;
+            }
+            Cores.atencao("Telefone inválido. Use apenas números, parênteses, hífen ou espaço (mínimo 8 dígitos).");
+        }
+    }
+
+    private String editarEmail(Contato contato) {
+        emailEditadoComCancelamento = false;
+        String emailAtual = contato.getEmail() != null ? contato.getEmail() : "(sem e-mail)";
+        while (true) {
+            Cores.print(Cores.BRANCO, "Novo e-mail [" + emailAtual + "]: ");
+            String entrada = scanner.nextLine().trim();
+
+            if (entrada.equals("0")) {
+                emailEditadoComCancelamento = true;
+                Cores.atencao("Edição cancelada.");
+                return null;
+            }
+            if (entrada.isBlank()) {
+                // Enter = manter o atual (pode ser null)
+                return contato.getEmail();
+            }
+            if (emailValido(entrada)) {
+                return entrada;
+            }
+            Cores.atencao("E-mail inválido. Digite um e-mail com @ e domínio (ex: nome@email.com) ou pressione Enter para manter o atual.");
         }
     }
 
@@ -250,55 +307,4 @@ public class AgendaTelefonica {
             switch (opcao) {
                 case "2": prompt = "Digite parte do nome: ";     break;
                 case "3": prompt = "Digite parte do telefone: "; break;
-                case "4": prompt = "Digite parte do e-mail: ";   break;
-                default:
-                    Cores.atencao("Opção inválida. Operação cancelada.");
-                    return null;
-            }
-
-            Cores.print(Cores.BRANCO, prompt);
-            String trecho = scanner.nextLine().trim();
-            if (trecho.isBlank()) {
-                Cores.atencao("Campo vazio. Operação cancelada.");
-                return null;
-            }
-
-            List<Contato> resultado;
-            switch (opcao) {
-                case "2": resultado = dao.buscarPorNome(trecho);     break;
-                case "3": resultado = dao.buscarPorTelefone(trecho); break;
-                default:  resultado = dao.buscarPorEmail(trecho);    break;
-            }
-
-            if (resultado.isEmpty()) {
-                if (!perguntarNovaBusca()) return null;
-                continue;
-            }
-            if (resultado.size() == 1) {
-                return resultado.get(0);
-            }
-
-            // mais de um resultado — mostra a lista e pede para escolher
-            Cores.println(Cores.AMARELO, resultado.size() + " contato(s) encontrado(s):");
-            imprimirCabecalho();
-            for (Contato c : resultado) {
-                System.out.println("  " + c);
-            }
-            Cores.separador();
-            Integer id = lerId("Digite o ID do contato que deseja " + operacao + ": ");
-            if (id == null) return null;
-            for (Contato c : resultado) {
-                if (c.getId() == id) return c;
-            }
-            Cores.atencao("ID " + id + " não está entre os resultados encontrados.");
-            if (!perguntarNovaBusca()) return null;
-        }
-    }
-
-    // pergunta se quer pesquisar novamente após não encontrar contato
-    // retorna true = tentar de novo, false = voltar ao menu
-    private boolean perguntarNovaBusca() {
-        Cores.println(Cores.AMARELO, "Contato não encontrado. Deseja pesquisar novamente?");
-        Cores.print(Cores.BRANCO, "Pressione Enter para voltar ao menu ou digite S para tentar novamente: ");
-        String resp = scanner.nextLine().trim();
-        return res
+                case "4": prompt = "Digite parte do e-mai

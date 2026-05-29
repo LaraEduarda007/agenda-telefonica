@@ -159,6 +159,29 @@ public class ContatoDAO {
     }
 
     /**
+     * Verifica se já existe outro contato com o mesmo nome (ignora maiúsculas/minúsculas).
+     * O parâmetro idAtual é usado para excluir o próprio contato da verificação durante edição.
+     *
+     * @param nome    nome a verificar
+     * @param idAtual id do contato sendo editado (passa 0 no cadastro)
+     * @return true se outro contato já usa esse nome
+     * @throws SQLException se ocorrer erro no banco
+     */
+    public boolean nomeJaExiste(String nome, int idAtual) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM contatos WHERE LOWER(nome) = LOWER(?) AND id <> ?";
+
+        try (Connection con = ConnectionFactory.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, nome);
+            ps.setInt(2, idAtual);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        }
+    }
+
+    /**
      * Busca um contato pelo seu id.
      * Retorna null se nenhum contato for encontrado com esse id.
      *
@@ -173,31 +196,4 @@ public class ContatoDAO {
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new Contato(
-                        rs.getInt("id"),
-                        rs.getString("nome"),
-                        rs.getString("telefone"),
-                        rs.getString("email")
-                    );
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Atualiza os dados de um contato já existente no banco.
-     * Usa o id do contato para encontrar o registro correto.
-     *
-     * @param contato contato com os novos dados
-     * @throws SQLException se ocorrer erro no banco
-     */
-    public void atualizar(Contato contato) throws SQLException {
-        String sql = "UPDATE contatos SET nome = ?, telefone = ?, email = ? WHERE id = ?";
-
-        try (Connection con = ConnectionFactory.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, contato.getNo
+            try (ResultSet rs
