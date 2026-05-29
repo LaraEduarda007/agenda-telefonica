@@ -67,6 +67,53 @@ public class ContatoDAO {
     }
 
     /**
+     * Busca contatos em todos os campos: nome, telefone e e-mail (LIKE) ou ID (se for número).
+     * Retorna resultados em ordem alfabética.
+     *
+     * @param termo texto digitado pelo usuário
+     * @return lista de contatos encontrados
+     * @throws SQLException se ocorrer erro no banco
+     */
+    public List<Contato> buscarGeral(String termo) throws SQLException {
+        List<Contato> lista = new ArrayList<>();
+
+        // tenta busca por ID se o termo for numérico
+        try {
+            int id = Integer.parseInt(termo);
+            Contato c = buscarPorId(id);
+            if (c != null) lista.add(c);
+            return lista;
+        } catch (NumberFormatException ignored) {
+            // não é número — busca por texto nos demais campos
+        }
+
+        String sql = "SELECT id, nome, telefone, email FROM contatos " +
+                     "WHERE nome LIKE ? OR telefone LIKE ? OR email LIKE ? " +
+                     "ORDER BY nome ASC";
+
+        try (Connection con = ConnectionFactory.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            String like = "%" + termo + "%";
+            ps.setString(1, like);
+            ps.setString(2, like);
+            ps.setString(3, like);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(new Contato(
+                        rs.getInt("id"),
+                        rs.getString("nome"),
+                        rs.getString("telefone"),
+                        rs.getString("email")
+                    ));
+                }
+            }
+        }
+        return lista;
+    }
+
+    /**
      * Busca contatos pelo nome usando busca parcial (LIKE).
      * Não precisa digitar o nome completo — qualquer trecho encontra o contato.
      *
@@ -150,50 +197,4 @@ public class ContatoDAO {
                         rs.getInt("id"),
                         rs.getString("nome"),
                         rs.getString("telefone"),
-                        rs.getString("email")
-                    ));
-                }
-            }
-        }
-        return lista;
-    }
-
-    /**
-     * Verifica se já existe outro contato com o mesmo nome (ignora maiúsculas/minúsculas).
-     * O parâmetro idAtual é usado para excluir o próprio contato da verificação durante edição.
-     *
-     * @param nome    nome a verificar
-     * @param idAtual id do contato sendo editado (passa 0 no cadastro)
-     * @return true se outro contato já usa esse nome
-     * @throws SQLException se ocorrer erro no banco
-     */
-    public boolean nomeJaExiste(String nome, int idAtual) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM contatos WHERE LOWER(nome) = LOWER(?) AND id <> ?";
-
-        try (Connection con = ConnectionFactory.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, nome);
-            ps.setInt(2, idAtual);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && rs.getInt(1) > 0;
-            }
-        }
-    }
-
-    /**
-     * Busca um contato pelo seu id.
-     * Retorna null se nenhum contato for encontrado com esse id.
-     *
-     * @param id identificador do contato
-     * @return o contato encontrado, ou null
-     * @throws SQLException se ocorrer erro no banco
-     */
-    public Contato buscarPorId(int id) throws SQLException {
-        String sql = "SELECT id, nome, telefone, email FROM contatos WHERE id = ?";
-
-        try (Connection con = ConnectionFactory.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs
+                    
