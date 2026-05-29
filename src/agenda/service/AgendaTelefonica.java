@@ -227,87 +227,78 @@ public class AgendaTelefonica {
 
     // localiza um contato por ID, nome, telefone ou e-mail — usado no editar e excluir
     private Contato resolverContato(String operacao) throws SQLException {
-        Cores.println(Cores.LILAS, "Buscar por:");
-        System.out.println("  1 → ID");
-        System.out.println("  2 → Nome");
-        System.out.println("  3 → Número de telefone");
-        System.out.println("  4 → E-mail");
-        Cores.print(Cores.BRANCO, "  Opção: ");
-        String opcao = scanner.nextLine().trim();
-
-        if (opcao.equals("1")) {
-            Integer id = lerId("ID do contato a " + operacao + ": ");
-            if (id == null) return null;
-            Contato contato = dao.buscarPorId(id);
-            if (contato == null) {
-                Cores.atencao("Nenhum contato com ID " + id + " foi encontrado.");
-            }
-            return contato;
-        }
-
-        // opções 2, 3 e 4 — busca parcial por texto
-        String prompt;
-        switch (opcao) {
-            case "2": prompt = "Digite parte do nome: ";     break;
-            case "3": prompt = "Digite parte do telefone: "; break;
-            case "4": prompt = "Digite parte do e-mail: ";   break;
-            default:
-                Cores.atencao("Opção inválida. Operação cancelada.");
-                return null;
-        }
-
-        Cores.print(Cores.BRANCO, prompt);
-        String trecho = scanner.nextLine().trim();
-        if (trecho.isBlank()) {
-            Cores.atencao("Campo vazio. Operação cancelada.");
-            return null;
-        }
-
-        List<Contato> resultado;
-        switch (opcao) {
-            case "2": resultado = dao.buscarPorNome(trecho);     break;
-            case "3": resultado = dao.buscarPorTelefone(trecho); break;
-            default:  resultado = dao.buscarPorEmail(trecho);    break;
-        }
-
-        if (resultado.isEmpty()) {
-            Cores.atencao("Nenhum contato encontrado.");
-            return null;
-        }
-        if (resultado.size() == 1) {
-            return resultado.get(0);
-        }
-
-        // mais de um resultado — mostra a lista e pede para escolher
-        Cores.println(Cores.AMARELO, resultado.size() + " contato(s) encontrado(s):");
-        imprimirCabecalho();
-        for (Contato c : resultado) {
-            System.out.println("  " + c);
-        }
-        Cores.separador();
-        Integer id = lerId("Digite o ID do contato que deseja " + operacao + ": ");
-        if (id == null) return null;
-        for (Contato c : resultado) {
-            if (c.getId() == id) return c;
-        }
-        Cores.atencao("ID " + id + " não está entre os resultados encontrados.");
-        return null;
-    }
-
-    // lê um campo obrigatório — pede de novo se vazio, ou cancela se digitar "0"
-    private String lerCampoObrigatorio(String prompt) {
         while (true) {
+            Cores.println(Cores.LILAS, "Buscar por:");
+            System.out.println("  1 → ID");
+            System.out.println("  2 → Nome");
+            System.out.println("  3 → Número de telefone");
+            System.out.println("  4 → E-mail");
+            Cores.print(Cores.BRANCO, "  Opção: ");
+            String opcao = scanner.nextLine().trim();
+
+            if (opcao.equals("1")) {
+                Integer id = lerId("ID do contato a " + operacao + ": ");
+                if (id == null) return null;
+                Contato contato = dao.buscarPorId(id);
+                if (contato != null) return contato;
+                if (!perguntarNovaBusca()) return null;
+                continue;
+            }
+
+            // opções 2, 3 e 4 — busca parcial por texto
+            String prompt;
+            switch (opcao) {
+                case "2": prompt = "Digite parte do nome: ";     break;
+                case "3": prompt = "Digite parte do telefone: "; break;
+                case "4": prompt = "Digite parte do e-mail: ";   break;
+                default:
+                    Cores.atencao("Opção inválida. Operação cancelada.");
+                    return null;
+            }
+
             Cores.print(Cores.BRANCO, prompt);
-            Cores.println(Cores.AMARELO, " (digite 0 para cancelar e voltar ao menu)");
-            Cores.print(Cores.BRANCO, "> ");
-            String valor = scanner.nextLine().trim();
-            if (valor.equals("0")) {
-                Cores.atencao("Operação cancelada.");
+            String trecho = scanner.nextLine().trim();
+            if (trecho.isBlank()) {
+                Cores.atencao("Campo vazio. Operação cancelada.");
                 return null;
             }
-            if (!valor.isBlank()) return valor;
-            Cores.atencao("Este campo é obrigatório. Tente novamente.");
+
+            List<Contato> resultado;
+            switch (opcao) {
+                case "2": resultado = dao.buscarPorNome(trecho);     break;
+                case "3": resultado = dao.buscarPorTelefone(trecho); break;
+                default:  resultado = dao.buscarPorEmail(trecho);    break;
+            }
+
+            if (resultado.isEmpty()) {
+                if (!perguntarNovaBusca()) return null;
+                continue;
+            }
+            if (resultado.size() == 1) {
+                return resultado.get(0);
+            }
+
+            // mais de um resultado — mostra a lista e pede para escolher
+            Cores.println(Cores.AMARELO, resultado.size() + " contato(s) encontrado(s):");
+            imprimirCabecalho();
+            for (Contato c : resultado) {
+                System.out.println("  " + c);
+            }
+            Cores.separador();
+            Integer id = lerId("Digite o ID do contato que deseja " + operacao + ": ");
+            if (id == null) return null;
+            for (Contato c : resultado) {
+                if (c.getId() == id) return c;
+            }
+            Cores.atencao("ID " + id + " não está entre os resultados encontrados.");
+            if (!perguntarNovaBusca()) return null;
         }
     }
 
-    // lê 
+    // pergunta se quer pesquisar novamente após não encontrar contato
+    // retorna true = tentar de novo, false = voltar ao menu
+    private boolean perguntarNovaBusca() {
+        Cores.println(Cores.AMARELO, "Contato não encontrado. Deseja pesquisar novamente?");
+        Cores.print(Cores.BRANCO, "Pressione Enter para voltar ao menu ou digite S para tentar novamente: ");
+        String resp = scanner.nextLine().trim();
+        return res
