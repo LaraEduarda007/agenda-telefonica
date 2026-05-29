@@ -77,6 +77,17 @@ public class AgendaTelefonica {
         String nome = lerCampoObrigatorio("Nome completo: ");
         if (nome == null) return;
 
+        try {
+            while (dao.nomeJaExiste(nome, 0)) {
+                Cores.atencao("Já existe um contato com o nome \"" + nome + "\". Digite outro nome.");
+                nome = lerCampoObrigatorio("Nome completo: ");
+                if (nome == null) return;
+            }
+        } catch (SQLException e) {
+            Cores.erro("Erro ao verificar nome: " + e.getMessage());
+            return;
+        }
+
         String telefone = lerTelefone();
         if (telefone == null) return;
 
@@ -297,14 +308,4 @@ public class AgendaTelefonica {
                 Integer id = lerId("ID do contato a " + operacao + ": ");
                 if (id == null) return null;
                 Contato contato = dao.buscarPorId(id);
-                if (contato != null) return contato;
-                if (!perguntarNovaBusca()) return null;
-                continue;
-            }
-
-            // opções 2, 3 e 4 — busca parcial por texto
-            String prompt;
-            switch (opcao) {
-                case "2": prompt = "Digite parte do nome: ";     break;
-                case "3": prompt = "Digite parte do telefone: "; break;
-                case "4": prompt = "Digite parte do e-mai
+                if (contato != null) return con
