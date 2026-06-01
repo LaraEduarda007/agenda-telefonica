@@ -5,10 +5,13 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Fábrica de conexões com o banco de dados MySQL.
+ * Classe responsável por criar a conexão com o banco de dados MySQL.
  *
- * Centraliza as configurações de conexão em um só lugar.
- * Para mudar o banco, basta alterar as constantes abaixo.
+ * <p>Centralizei as configurações de conexão aqui para facilitar a manutenção.
+ * Se precisar mudar o banco, a senha ou o servidor, basta alterar as constantes
+ * nessa classe — o resto do sistema não precisa ser tocado.</p>
+ *
+ * @author Lara Eduarda
  */
 public class ConnectionFactory {
 
