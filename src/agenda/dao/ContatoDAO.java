@@ -9,10 +9,24 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-// Classe responsável por todas as operações no banco de dados
+/**
+ * Classe DAO responsável por todas as operações no banco de dados.
+ *
+ * <p>Implementei aqui o CRUD completo da agenda: salvar, listar, buscar,
+ * atualizar e excluir contatos. Cada método abre e fecha a própria conexão
+ * usando try-with-resources, o que garante que nenhuma conexão fique aberta
+ * por acidente.</p>
+ *
+ * @author Lara Eduarda
+ */
 public class ContatoDAO {
 
-    // salva um novo contato no banco
+    /**
+     * Salva um novo contato no banco de dados.
+     *
+     * @param contato o contato a ser salvo
+     * @throws SQLException se ocorrer erro no banco
+     */
     public void salvar(Contato contato) throws SQLException {
         String sql = "INSERT INTO contatos (nome, telefone, email) VALUES (?, ?, ?)";
 
@@ -26,7 +40,12 @@ public class ContatoDAO {
         }
     }
 
-    // retorna todos os contatos em ordem alfabética
+    /**
+     * Retorna todos os contatos cadastrados, ordenados por nome (A-Z).
+     *
+     * @return lista de contatos em ordem alfabética
+     * @throws SQLException se ocorrer erro no banco
+     */
     public List<Contato> listarTodos() throws SQLException {
         String sql = "SELECT id, nome, telefone, email FROM contatos ORDER BY nome ASC";
         List<Contato> lista = new ArrayList<>();
@@ -48,7 +67,14 @@ public class ContatoDAO {
         return lista;
     }
 
-    // busca contatos pelo nome usando LIKE (busca parcial)
+    /**
+     * Busca contatos pelo nome usando busca parcial (LIKE).
+     * Não precisa digitar o nome completo — qualquer trecho encontra o contato.
+     *
+     * @param trecho parte do nome a buscar
+     * @return lista de contatos encontrados, em ordem alfabética
+     * @throws SQLException se ocorrer erro no banco
+     */
     public List<Contato> buscarPorNome(String trecho) throws SQLException {
         String sql = "SELECT id, nome, telefone, email FROM contatos " +
                      "WHERE nome LIKE ? ORDER BY nome ASC";
@@ -73,7 +99,14 @@ public class ContatoDAO {
         return lista;
     }
 
-    // busca um contato pelo id, retorna null se não encontrar
+    /**
+     * Busca um contato pelo seu id.
+     * Retorna null se nenhum contato for encontrado com esse id.
+     *
+     * @param id identificador do contato
+     * @return o contato encontrado, ou null
+     * @throws SQLException se ocorrer erro no banco
+     */
     public Contato buscarPorId(int id) throws SQLException {
         String sql = "SELECT id, nome, telefone, email FROM contatos WHERE id = ?";
 
@@ -95,7 +128,13 @@ public class ContatoDAO {
         return null;
     }
 
-    // atualiza os dados de um contato existente
+    /**
+     * Atualiza os dados de um contato já existente no banco.
+     * Usa o id do contato para encontrar o registro correto.
+     *
+     * @param contato contato com os novos dados
+     * @throws SQLException se ocorrer erro no banco
+     */
     public void atualizar(Contato contato) throws SQLException {
         String sql = "UPDATE contatos SET nome = ?, telefone = ?, email = ? WHERE id = ?";
 
@@ -110,7 +149,13 @@ public class ContatoDAO {
         }
     }
 
-    // remove um contato pelo id
+    /**
+     * Remove um contato do banco pelo seu id.
+     * Antes de chamar esse método, sempre peço confirmação ao usuário.
+     *
+     * @param id identificador do contato a ser removido
+     * @throws SQLException se ocorrer erro no banco
+     */
     public void excluir(int id) throws SQLException {
         String sql = "DELETE FROM contatos WHERE id = ?";
 
@@ -122,13 +167,21 @@ public class ContatoDAO {
         }
     }
 
-    // exporta todos os contatos para um arquivo .txt
+    /**
+     * Exporta todos os contatos para um arquivo de texto (.txt).
+     * O arquivo é salvo na pasta onde o programa está sendo executado.
+     *
+     * @param caminho caminho do arquivo a ser criado
+     * @return quantidade de contatos exportados
+     * @throws SQLException se ocorrer erro ao acessar o banco
+     * @throws IOException  se ocorrer erro ao criar o arquivo
+     */
     public int exportarTxt(String caminho) throws SQLException, IOException {
         List<Contato> lista = listarTodos();
 
         try (PrintWriter pw = new PrintWriter(new FileWriter(caminho))) {
             pw.println("========================================");
-            pw.println("         AGENDA TELEFÔNICA");
+            pw.println("         AGENDA TELEFONICA");
             pw.println("========================================");
             pw.printf("%-5s  %-25s  %-18s  %s%n", "ID", "Nome", "Telefone", "E-mail");
             pw.println("----------------------------------------");
