@@ -23,21 +23,49 @@ public class ContatoDAO {
 
     /**
      * Salva um novo contato no banco de dados.
+     * Reutiliza o menor ID disponível (inclusive IDs de registros já excluídos),
+     * garantindo que não haja "buracos" na sequência.
      *
      * @param contato o contato a ser salvo
      * @throws SQLException se ocorrer erro no banco
      */
     public void salvar(Contato contato) throws SQLException {
-        String sql = "INSERT INTO contatos (nome, telefone, email) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO contatos (id, nome, telefone, email) VALUES (?, ?, ?, ?)";
 
-        try (Connection con = ConnectionFactory.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, contato.getNome());
-            ps.setString(2, contato.getTelefone());
-            ps.setString(3, contato.getEmail());
-            ps.executeUpdate();
+        try (Connection con = ConnectionFactory.getConnection()) {
+            int proximoId = encontrarProximoId(con);
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, proximoId);
+                ps.setString(2, contato.getNome());
+                ps.setString(3, contato.getTelefone());
+                ps.setString(4, contato.getEmail());
+                ps.executeUpdate();
+            }
         }
+    }
+
+    /**
+     * Encontra o menor ID inteiro positivo que ainda não está em uso na tabela.
+     * Assim, se o ID 3 foi excluído, o próximo cadastro receberá o ID 3.
+     *
+     * @param con conexão ativa com o banco
+     * @return o menor ID disponível
+     * @throws SQLException se ocorrer erro no banco
+     */
+    private int encontrarProximoId(Connection con) throws SQLException {
+        String sql = "SELECT MIN(n) FROM (" +
+                     "  SELECT 1 AS n" +
+                     "  UNION ALL" +
+                     "  SELECT id + 1 FROM contatos" +
+                     ") t WHERE n NOT IN (SELECT id FROM contatos)";
+
+        try (PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        }
+        return 1;
     }
 
     /**
@@ -68,22 +96,27 @@ public class ContatoDAO {
     }
 
     /**
-     * Busca contatos pelo nome usando busca parcial (LIKE).
-     * Não precisa digitar o nome completo — qualquer trecho encontra o contato.
+     * Busca contatos por qualquer campo: nome, telefone ou e-mail.
+     * Usa busca parcial (LIKE) em todos os campos ao mesmo tempo.
      *
-     * @param trecho parte do nome a buscar
+     * @param trecho texto a buscar em qualquer campo
      * @return lista de contatos encontrados, em ordem alfabética
      * @throws SQLException se ocorrer erro no banco
      */
-    public List<Contato> buscarPorNome(String trecho) throws SQLException {
+    public List<Contato> buscarPorQualquerCampo(String trecho) throws SQLException {
         String sql = "SELECT id, nome, telefone, email FROM contatos " +
-                     "WHERE nome LIKE ? ORDER BY nome ASC";
+                     "WHERE nome LIKE ? OR telefone LIKE ? OR email LIKE ? " +
+                     "ORDER BY nome ASC";
         List<Contato> lista = new ArrayList<>();
 
         try (Connection con = ConnectionFactory.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setString(1, "%" + trecho + "%");
+            String like = "%" + trecho + "%";
+            ps.setString(1, like);
+            ps.setString(2, like);
+            ps.setString(3, like);
+
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Contato c = new Contato(

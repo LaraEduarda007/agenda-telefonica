@@ -69,7 +69,7 @@ public class AgendaTelefonica {
         Cores.separador();
         System.out.println("  1 - Adicionar contato");
         System.out.println("  2 - Listar todos os contatos");
-        System.out.println("  3 - Buscar contato por nome");
+        System.out.println("  3 - Buscar contato");
         System.out.println("  4 - Editar contato");
         System.out.println("  5 - Excluir contato");
         System.out.println("  6 - Exportar agenda para .txt");
@@ -118,19 +118,20 @@ public class AgendaTelefonica {
         }
     }
 
-    // opcao 3 - buscar contato por parte do nome
+    // opcao 3 - buscar contato por qualquer informacao (nome, telefone ou e-mail)
     private void buscarContato() {
         Cores.titulo("BUSCAR CONTATO");
-        Cores.print(Cores.BRANCO, "Digite parte do nome: ");
+        Cores.println(Cores.LILAS, "Pode buscar por nome, telefone ou e-mail.");
+        Cores.print(Cores.BRANCO, "Digite o que deseja buscar: ");
         String trecho = scanner.nextLine().trim();
 
         if (trecho.isBlank()) {
-            Cores.atencao("Digite ao menos uma letra para buscar.");
+            Cores.atencao("Digite ao menos uma letra ou numero para buscar.");
             return;
         }
 
         try {
-            List<Contato> resultado = dao.buscarPorNome(trecho);
+            List<Contato> resultado = dao.buscarPorQualquerCampo(trecho);
             if (resultado.isEmpty()) {
                 Cores.atencao("Nenhum contato encontrado com \"" + trecho + "\".");
             } else {
@@ -146,7 +147,7 @@ public class AgendaTelefonica {
         }
     }
 
-    // opcao 4 - editar contato pelo id ou nome
+    // opcao 4 - editar contato
     private void editarContato() {
         Cores.titulo("EDITAR CONTATO");
 
@@ -162,14 +163,23 @@ public class AgendaTelefonica {
             String nome = scanner.nextLine().trim();
             if (!nome.isBlank()) contato.setNome(nome);
 
-            System.out.print("Novo telefone [" + contato.getTelefone() + "]: ");
-            String tel = scanner.nextLine().trim();
-            if (!tel.isBlank()) {
+            // Validacao de telefone por quantidade de digitos — nao deixa passar se errado
+            while (true) {
+                System.out.print("Novo telefone [" + contato.getTelefone() + "]: ");
+                String tel = scanner.nextLine().trim();
+                if (tel.isBlank()) break; // mantém o atual
+
                 if (!tel.matches("[0-9()\\-\\s+]+")) {
-                    Cores.atencao("Telefone invalido. Mantendo o anterior.");
-                } else {
-                    contato.setTelefone(tel);
+                    Cores.atencao("Telefone invalido. Use apenas numeros, parenteses, hifen ou espaco.");
+                    continue;
                 }
+                long digitos = tel.chars().filter(Character::isDigit).count();
+                if (digitos < 10 || digitos > 11) {
+                    Cores.atencao("Telefone invalido. Informe 10 digitos (fixo) ou 11 digitos (celular).");
+                    continue;
+                }
+                contato.setTelefone(formatarTelefone(tel));
+                break;
             }
 
             String emailAtual = contato.getEmail() != null ? contato.getEmail() : "(sem e-mail)";
@@ -237,56 +247,47 @@ public class AgendaTelefonica {
         }
     }
 
-    // localiza um contato por ID ou por busca parcial de nome — usado no editar e excluir
+    /**
+     * Localiza um contato para editar ou excluir.
+     * A busca é feita por qualquer campo: nome, telefone ou e-mail.
+     * Se mais de um contato for encontrado, mostra todos e pede para escolher pelo ID.
+     */
     private Contato resolverContato(String operacao) throws SQLException {
-        Cores.println(Cores.LILAS, "Buscar por:");
-        System.out.println("  1 - ID");
-        System.out.println("  2 - Nome");
-        Cores.print(Cores.BRANCO, "  Opcao: ");
-        String opcao = scanner.nextLine().trim();
+        Cores.println(Cores.LILAS, "Pode buscar por nome, telefone ou e-mail.");
+        Cores.print(Cores.BRANCO, "  Digite o que deseja buscar: ");
+        String trecho = scanner.nextLine().trim();
 
-        if (opcao.equals("1")) {
-            Integer id = lerId("ID do contato a " + operacao + ": ");
-            if (id == null) return null;
-            Contato contato = dao.buscarPorId(id);
-            if (contato == null) {
-                Cores.atencao("Nenhum contato com ID " + id + " foi encontrado.");
-            }
-            return contato;
-
-        } else if (opcao.equals("2")) {
-            Cores.print(Cores.BRANCO, "Digite parte do nome: ");
-            String trecho = scanner.nextLine().trim();
-            if (trecho.isBlank()) {
-                Cores.atencao("Digite ao menos uma letra para buscar.");
-                return null;
-            }
-            List<Contato> resultado = dao.buscarPorNome(trecho);
-            if (resultado.isEmpty()) {
-                Cores.atencao("Nenhum contato encontrado com \"" + trecho + "\".");
-                return null;
-            }
-            if (resultado.size() == 1) {
-                return resultado.get(0);
-            }
-            Cores.println(Cores.AMARELO, resultado.size() + " contato(s) encontrado(s):");
-            imprimirCabecalho();
-            for (Contato c : resultado) {
-                System.out.println("  " + c);
-            }
-            Cores.separador();
-            Integer id = lerId("Digite o ID do contato que deseja " + operacao + ": ");
-            if (id == null) return null;
-            for (Contato c : resultado) {
-                if (c.getId() == id) return c;
-            }
-            Cores.atencao("ID " + id + " nao esta entre os resultados encontrados.");
-            return null;
-
-        } else {
-            Cores.atencao("Opcao invalida. Operacao cancelada.");
+        if (trecho.isBlank()) {
+            Cores.atencao("Digite ao menos uma letra ou numero para buscar.");
             return null;
         }
+
+        List<Contato> resultado = dao.buscarPorQualquerCampo(trecho);
+
+        if (resultado.isEmpty()) {
+            Cores.atencao("Nenhum contato encontrado com \"" + trecho + "\".");
+            return null;
+        }
+
+        if (resultado.size() == 1) {
+            return resultado.get(0);
+        }
+
+        // Mais de um resultado encontrado — mostra todos e pede para escolher
+        Cores.println(Cores.AMARELO, resultado.size() + " contato(s) encontrado(s) com essa informacao:");
+        imprimirCabecalho();
+        for (Contato c : resultado) {
+            System.out.println("  " + c);
+        }
+        Cores.separador();
+        Integer id = lerId("Digite o ID do contato que deseja " + operacao + ": ");
+        if (id == null) return null;
+
+        for (Contato c : resultado) {
+            if (c.getId() == id) return c;
+        }
+        Cores.atencao("ID " + id + " nao esta entre os resultados encontrados.");
+        return null;
     }
 
     // le um campo obrigatorio — pede de novo se vazio, ou cancela se digitar "0"
@@ -305,11 +306,16 @@ public class AgendaTelefonica {
         }
     }
 
-    // le e valida o telefone — so aceita digitos, parenteses, hifen, espaco e +, minimo 8 digitos
+    /**
+     * Lê e valida o telefone.
+     * Aceita qualquer formato com dígitos (10 ou 11 dígitos).
+     * Formata automaticamente antes de salvar.
+     */
     private String lerTelefone() {
         while (true) {
-            Cores.print(Cores.BRANCO, "Telefone (ex: (62) 99000-0000): ");
+            Cores.print(Cores.BRANCO, "Telefone (ex: (62) 99000-0000 ou apenas os numeros 62990000000): ");
             String tel = scanner.nextLine().trim();
+
             if (tel.isBlank()) {
                 Cores.atencao("Telefone e obrigatorio. Tente novamente.");
                 continue;
@@ -318,13 +324,40 @@ public class AgendaTelefonica {
                 Cores.atencao("Operacao cancelada.");
                 return null;
             }
-            long digitos = tel.chars().filter(Character::isDigit).count();
-            if (!tel.matches("[0-9()\\-\\s+]+") || digitos < 8) {
-                Cores.atencao("Telefone invalido. Use apenas numeros, parenteses, hifen ou espaco (minimo 8 digitos).");
+            if (!tel.matches("[0-9()\\-\\s+]+")) {
+                Cores.atencao("Telefone invalido. Use apenas numeros, parenteses, hifen ou espaco.");
                 continue;
             }
-            return tel;
+            long digitos = tel.chars().filter(Character::isDigit).count();
+            if (digitos < 10 || digitos > 11) {
+                Cores.atencao("Telefone invalido. Informe 10 digitos (fixo) ou 11 digitos (celular).");
+                continue;
+            }
+            return formatarTelefone(tel);
         }
+    }
+
+    /**
+     * Formata um número de telefone para o padrão brasileiro.
+     * Remove tudo que não for dígito e aplica a máscara:
+     *   10 dígitos → (XX) XXXX-XXXX  (fixo)
+     *   11 dígitos → (XX) XXXXX-XXXX (celular)
+     * Se o número já estiver formatado, retorna como está.
+     */
+    private String formatarTelefone(String tel) {
+        String soDigitos = tel.replaceAll("[^0-9]", "");
+        if (soDigitos.length() == 11) {
+            return String.format("(%s) %s-%s",
+                soDigitos.substring(0, 2),
+                soDigitos.substring(2, 7),
+                soDigitos.substring(7));
+        } else if (soDigitos.length() == 10) {
+            return String.format("(%s) %s-%s",
+                soDigitos.substring(0, 2),
+                soDigitos.substring(2, 6),
+                soDigitos.substring(6));
+        }
+        return tel; // fallback (nao deve ocorrer após validação)
     }
 
     // le o e-mail (campo opcional) — aceita vazio ou valida o formato

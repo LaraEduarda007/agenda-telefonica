@@ -37,18 +37,21 @@ A conexão com o banco é gerenciada pela `ConnectionFactory.java`, usando JDBC.
 |-------|-----------|
 | 1 | Adicionar novo contato (nome, telefone, e-mail opcional) |
 | 2 | Listar todos os contatos em ordem alfabética |
-| 3 | Buscar contato por parte do nome (busca parcial) |
+| 3 | Buscar contato por nome, telefone ou e-mail |
 | 4 | Editar contato existente |
 | 5 | Excluir contato com confirmação antes de deletar |
 | 6 | Exportar todos os contatos para arquivo `.txt` |
 | 0 | Sair |
 
 **Diferenciais implementados:**
-- Busca parcial com `LIKE` no SQL — não precisa digitar o nome completo
+- Busca por qualquer campo com `LIKE` — nome, telefone ou e-mail, sem precisar digitar completo
 - Listagem em ordem alfabética (`ORDER BY nome ASC`)
+- Reutilização de IDs: ao excluir o contato de ID 3, o próximo cadastro recebe o ID 3
+- Formatação automática de telefone: digitar `62990001111` vira `(62) 99000-1111`
+- Validação de telefone por quantidade de dígitos: 10 (fixo) ou 11 (celular), não avança se errado
 - Confirmação obrigatória antes de excluir
+- Quando dois contatos têm a mesma informação (ex: mesmo e-mail), o sistema lista os dois e pede para escolher
 - Exportação para `.txt` formatado (bloqueia se a agenda estiver vazia)
-- Validação de telefone (mínimo 8 dígitos, caracteres permitidos)
 - Validação de e-mail (formato `nome@dominio.com`)
 - Interface colorida no terminal com cores ANSI
 
@@ -148,24 +151,91 @@ A tabela foi removida ou o script não foi executado corretamente. Rode o `datab
 
 ## Como testar cada funcionalidade
 
-**Adicionar contato (opção 1)**
-Digite nome, telefone (ex: `(62) 99000-0000`) e e-mail opcional.
-O sistema bloqueia nomes duplicados, telefones inválidos e e-mails com formato errado.
+O banco já vem com 4 contatos de exemplo após executar o `agenda.sql` (Marcio, Lara, Teteu e Benito). Os testes abaixo podem ser feitos em sequência.
 
-**Listar contatos (opção 2)**
-Exibe todos os contatos em ordem alfabética, com ID, nome, telefone e e-mail.
+---
 
-**Buscar por nome (opção 3)**
-Digite apenas parte do nome. Exemplo: digitando `ar` encontra `Lara`, `Marcio`, etc.
+### Opção 1 — Adicionar contato
 
-**Editar contato (opção 4)**
-Busque pelo ID ou parte do nome. Pressione Enter nos campos que não quiser alterar.
+**Teste 1: telefone só com dígitos (formatação automática)**
+- Nome: `Ana Paula`
+- Telefone: `62991112222`
+- O sistema formata automaticamente para `(62) 99111-2222` antes de salvar.
 
-**Excluir contato (opção 5)**
-Busque o contato e confirme com `s` quando perguntado. Qualquer outra tecla cancela.
+**Teste 2: telefone com dígitos de menos**
+- Telefone: `1234`
+- O sistema avisa que precisa de 10 ou 11 dígitos e pede novamente — não avança.
 
-**Exportar para .txt (opção 6)**
-Gera o arquivo `contatos.txt` na pasta onde o programa está rodando. Se a agenda estiver vazia, avisa e não cria o arquivo.
+**Teste 3: e-mail inválido**
+- E-mail: `ana.gmail`
+- O sistema rejeita e pede de novo. Pressionar Enter pula o e-mail (campo opcional).
+
+---
+
+### Opção 2 — Listar contatos
+
+Exibe todos os contatos em ordem alfabética (A → Z), com ID, nome, telefone e e-mail.
+
+---
+
+### Opção 3 — Buscar contato
+
+A busca funciona por **qualquer campo**: nome, telefone ou e-mail, sem precisar digitar completo.
+
+**Teste 1: busca por parte do nome**
+- Digite `ar` → encontra `Lara` e `Marcio`.
+
+**Teste 2: busca por parte do telefone**
+- Digite `9600` → encontra o contato que tem esse trecho no telefone.
+
+**Teste 3: busca por parte do e-mail**
+- Digite `@email` → lista todos que têm e-mail cadastrado.
+
+**Teste 4: busca sem resultado**
+- Digite `zzzzz` → informa que nenhum contato foi encontrado.
+
+---
+
+### Opção 4 — Editar contato
+
+A busca para editar também funciona por qualquer campo (nome, telefone ou e-mail).
+
+**Teste 1: busca por telefone**
+- Digite `98002` → localiza a Lara e abre para edição.
+- Pressione Enter em cada campo para manter o valor atual.
+
+**Teste 2: validação de telefone no editar**
+- No campo telefone, digite `123` → o sistema avisa que precisa de 10 ou 11 dígitos e **não avança** para o próximo campo até corrigir.
+- Digite `62991234567` → formata para `(62) 99123-4567` e aceita.
+
+**Teste 3: dois contatos com a mesma informação**
+- Adicione dois contatos com o mesmo e-mail (ex: `teste@email.com`).
+- Ao editar, busque por `teste@email` → o sistema lista os dois e pede para escolher o ID do que deseja editar.
+
+---
+
+### Opção 5 — Excluir contato e reutilização de ID
+
+**Teste 1: confirmação antes de excluir**
+- Busque qualquer contato e quando aparecer `Confirma a exclusão? (s/N):`
+- Digite `n` → operação cancelada, ninguém é excluído.
+
+**Teste 2: reutilização de ID**
+- Exclua o contato de ID 2 (opção 5).
+- Adicione um novo contato (opção 1).
+- Liste (opção 2) → o novo contato recebe o **ID 2**, não um número novo no fim da lista.
+
+---
+
+### Opção 6 — Exportar para .txt
+
+Gera o arquivo `contatos.txt` na mesma pasta onde o programa está rodando.
+
+**Teste 1: exportação normal**
+- Com contatos cadastrados, escolha a opção 6. O arquivo é criado e o sistema informa o caminho.
+
+**Teste 2: agenda vazia**
+- Exclua todos os contatos e tente exportar → o sistema avisa que não há contatos e não cria o arquivo.
 
 ---
 
