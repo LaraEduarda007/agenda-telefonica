@@ -96,10 +96,10 @@ Isso cria o banco `agenda`, a tabela `contatos` e insere 4 contatos de exemplo p
 
 ### 4. Configurar a senha do banco
 
-Abra o arquivo `src/agenda/dao/ConnectionFactory.java` e ajuste a senha na constante:
+A senha padrão configurada no projeto é `root1234`. Se a senha do seu MySQL for diferente, abra o arquivo `src/agenda/dao/ConnectionFactory.java` e altere a constante:
 
 ```java
-private static final String SENHA = "sua_senha_aqui";
+private static final String SENHA = "root1234"; // troque pela sua senha do MySQL
 ```
 
 > O usuário padrão configurado é `root` e o banco é `agenda` na porta `3306`. Altere se necessário.
