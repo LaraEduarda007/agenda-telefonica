@@ -183,14 +183,15 @@ public class AgendaTelefonica {
             }
 
             String emailAtual = contato.getEmail() != null ? contato.getEmail() : "(sem e-mail)";
-            System.out.print("Novo e-mail [" + emailAtual + "]: ");
-            String email = scanner.nextLine().trim();
-            if (!email.isBlank()) {
+            while (true) {
+                System.out.print("Novo e-mail [" + emailAtual + "]: ");
+                String email = scanner.nextLine().trim();
+                if (email.isBlank()) break; // mantém o atual
                 if (emailValido(email)) {
                     contato.setEmail(email);
-                } else {
-                    Cores.atencao("E-mail invalido. Mantendo o anterior.");
+                    break;
                 }
+                Cores.atencao("E-mail invalido. Digite novamente ou pressione Enter para manter o anterior.");
             }
 
             dao.atualizar(contato);
@@ -280,14 +281,15 @@ public class AgendaTelefonica {
             System.out.println("  " + c);
         }
         Cores.separador();
-        Integer id = lerId("Digite o ID do contato que deseja " + operacao + ": ");
-        if (id == null) return null;
+        while (true) {
+            Integer id = lerId("Digite o ID do contato que deseja " + operacao + ": ");
+            if (id == null) return null;
 
-        for (Contato c : resultado) {
-            if (c.getId() == id) return c;
+            for (Contato c : resultado) {
+                if (c.getId() == id) return c;
+            }
+            Cores.atencao("ID " + id + " nao esta na lista acima. Tente novamente ou digite 0 para cancelar.");
         }
-        Cores.atencao("ID " + id + " nao esta entre os resultados encontrados.");
-        return null;
     }
 
     // le um campo obrigatorio — pede de novo se vazio, ou cancela se digitar "0"
